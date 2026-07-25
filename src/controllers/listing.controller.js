@@ -4,6 +4,10 @@ import asyncHandler from '../utils/asyncHandler.js';
 import APIFeatures from '../utils/APIFeatures.js';
 import { uploadFiles, deleteFiles } from '../utils/storage.js';
 
+// Fields a client may filter the listing feed on. Anything else in the query
+// string is ignored rather than passed through to Mongoose.
+const LISTING_FILTERS = ['brand', 'model', 'city', 'condition', 'status', 'seller', 'year', 'price', 'engineCC', 'mileage'];
+
 const createListing = asyncHandler(async (req, res, next) => {
     const images = req.files?.length ? await uploadFiles(req.files, 'listings') : [];
 
@@ -31,7 +35,7 @@ const getAllListings = asyncHandler(async (req, res, next) => {
     const queryString = { ...req.query };
     if (!isAdmin) delete queryString.status;
 
-    const features = new APIFeatures(Listing.find(), queryString)
+    const features = new APIFeatures(Listing.find(), queryString, LISTING_FILTERS)
         .filter()
         .sort()
         .limitFields()
@@ -116,7 +120,7 @@ const updateListingStatus = asyncHandler(async (req, res, next) => {
         return next(new AppError('Status must be either approved or rejected', 400));
     }
 
-    const listing = await Listing.findByIdAndUpdate(req.params.id, { status }, { new: true ,runValidators: true});
+    const listing = await Listing.findByIdAndUpdate(req.params.id, { status }, { returnDocument: 'after', runValidators: true });
     if (!listing) {
         return next(new AppError('Listing not found', 404));
     }
