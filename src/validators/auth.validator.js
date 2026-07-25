@@ -12,4 +12,13 @@ const loginSchema = z.object({
     email: z.email("Invalid email address"),
     password: z.string().min(1, "Password is required"),
 });
-export { registerSchema, loginSchema };
+// Used by both forgot-password and resend-verification.
+const emailOnlySchema = z.object({
+    email: z.email("Invalid email address"),
+});
+
+const resetPasswordSchema = z.object({
+    password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
+export { registerSchema, loginSchema, emailOnlySchema, resetPasswordSchema };

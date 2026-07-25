@@ -6,8 +6,18 @@ const addFavorite = asyncHandler(async (req, res, next) => {
     const listingId = req.params.listingId;
     const userId = req.user._id;
 
-    const favorite = await Favorite.create({ listing: listingId, user: userId });
-    res.status(201).json({ success: true, data: favorite });
+    try {
+        const favorite = await Favorite.create({ listing: listingId, user: userId });
+        res.status(201).json({ success: true, data: favorite });
+    } catch (err) {
+        // The unique { user, listing } index is the real guard against duplicates.
+        // Without this its raw duplicate-key error surfaces as the unhelpful
+        // "This user is already in use".
+        if (err.code === 11000) {
+            return next(new AppError('Listing is already in your favorites', 409));
+        }
+        throw err;
+    }
 });
 
 const getUserFavorites = asyncHandler(async (req, res, next) => {
