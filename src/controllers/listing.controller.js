@@ -74,6 +74,14 @@ const getListing = asyncHandler(async (req, res, next) => {
         }
     }
 
+    // $inc rather than save() so concurrent views cannot overwrite each other's
+    // count. The owner looking at their own listing is not a view.
+    const isOwnListing = req.user && listing.seller?._id?.toString() === req.user._id.toString();
+    if (!isOwnListing) {
+        await Listing.updateOne({ _id: listing._id }, { $inc: { viewsCount: 1 } });
+        listing.viewsCount += 1;
+    }
+
     res.status(200).json({ success: true, data: listing });
 });
 
