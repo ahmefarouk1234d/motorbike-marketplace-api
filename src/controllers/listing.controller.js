@@ -4,6 +4,10 @@ import asyncHandler from '../utils/asyncHandler.js';
 import APIFeatures from '../utils/APIFeatures.js';
 import { uploadFiles, deleteFiles } from '../utils/storage.js';
 
+// Fields a client may filter the listing feed on. Anything else in the query
+// string is ignored rather than passed through to Mongoose.
+const LISTING_FILTERS = ['brand', 'model', 'city', 'condition', 'status', 'seller', 'year', 'price', 'engineCC', 'mileage'];
+
 const createListing = asyncHandler(async (req, res, next) => {
     const images = req.files?.length ? await uploadFiles(req.files, 'listings') : [];
 
@@ -24,11 +28,22 @@ const createListing = asyncHandler(async (req, res, next) => {
 });
 
 const getAllListings = asyncHandler(async (req, res, next) => {
-    const features = new APIFeatures(Listing.find(), req.query)
+    const isAdmin = req.user?.role === 'admin';
+
+    // Only admins may pick a status. Dropping it for everyone else stops
+    // ?status=pending from surfacing listings that have not been approved.
+    const queryString = { ...req.query };
+    if (!isAdmin) delete queryString.status;
+
+    const features = new APIFeatures(Listing.find(), queryString, LISTING_FILTERS)
         .filter()
         .sort()
         .limitFields()
         .paginate();
+
+    // Applied after filter() on purpose: Mongoose merges find() conditions with
+    // the last one winning, so the scope has to go on last to be authoritative.
+    if (!isAdmin) features.query = features.query.find({ status: 'approved' });
 
     const listings = await features.query
         .populate('brand', 'name logo')
@@ -48,6 +63,17 @@ const getListing = asyncHandler(async (req, res, next) => {
     if (!listing) {
         return next(new AppError('Listing not found', 404));
     }
+
+    // A listing that is not approved stays visible only to its seller and to
+    // admins. 404 rather than 403 so the response does not confirm it exists.
+    if (listing.status !== 'approved') {
+        const isAdmin = req.user?.role === 'admin';
+        const isOwner = req.user && listing.seller?._id?.toString() === req.user._id.toString();
+        if (!isAdmin && !isOwner) {
+            return next(new AppError('Listing not found', 404));
+        }
+    }
+
     res.status(200).json({ success: true, data: listing });
 });
 
@@ -94,7 +120,7 @@ const updateListingStatus = asyncHandler(async (req, res, next) => {
         return next(new AppError('Status must be either approved or rejected', 400));
     }
 
-    const listing = await Listing.findByIdAndUpdate(req.params.id, { status }, { new: true ,runValidators: true});
+    const listing = await Listing.findByIdAndUpdate(req.params.id, { status }, { returnDocument: 'after', runValidators: true });
     if (!listing) {
         return next(new AppError('Listing not found', 404));
     }

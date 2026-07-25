@@ -1,19 +1,44 @@
+const RANGE_OPERATORS = ['gte', 'gt', 'lte', 'lt'];
+
 class APIFeatures {
-    constructor(query, queryString) {
+    // allowedFilters is a whitelist of fields the caller may filter on. Anything
+    // not named here is ignored, so the query object is built by this class
+    // rather than handed straight to Mongoose from req.query.
+    constructor(query, queryString, allowedFilters = []) {
         this.query = query; // the Mongoose query (Listing.find())
         this.queryString = queryString; // req.query (the ?brand=...&page=2 object)
+        this.allowedFilters = allowedFilters;
     }
 
     filter() {
-        const queryObj = { ...this.queryString };
-        const excludedFields = ['sort', 'page', 'limit', 'fields'];
+        const filter = {};
 
-        excludedFields.forEach((field) => delete queryObj[field]);
+        for (const field of this.allowedFilters) {
+            // Exact match, e.g. ?city=Cairo. Only strings are accepted, so a
+            // repeated parameter cannot smuggle in an array.
+            const exact = this.queryString[field];
+            if (typeof exact === 'string') {
+                filter[field] = exact;
+            }
 
-        let queryStr = JSON.stringify(queryObj);
-        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+            // Range, e.g. ?price[gte]=100. Express 5's default query parser does
+            // not nest, so this arrives as the literal key "price[gte]". The
+            // operator names are ours, never taken from the request, and values
+            // are coerced to numbers.
+            const range = {};
+            for (const operator of RANGE_OPERATORS) {
+                const raw = this.queryString[`${field}[${operator}]`];
+                if (typeof raw !== 'string') continue;
 
-        this.query = this.query.find(JSON.parse(queryStr));
+                const value = Number(raw);
+                if (!Number.isFinite(value)) continue;
+
+                range[`$${operator}`] = value;
+            }
+            if (Object.keys(range).length) filter[field] = range;
+        }
+
+        this.query = this.query.find(filter);
         return this;
     }
 
