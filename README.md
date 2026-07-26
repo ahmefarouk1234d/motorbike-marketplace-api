@@ -12,7 +12,7 @@ Storage for images.
 
 | | |
 |---|---|
-| Node.js | 20 or newer (developed on 24) |
+| Node.js | 20.19 or newer — Mongoose 9 sets the floor (developed on 24) |
 | MongoDB | running locally, or any connection string |
 | Firebase | a project with Storage enabled — needed only for image uploads |
 | SMTP | any provider — needed only for verification and password-reset mail |
@@ -52,6 +52,9 @@ Every variable lives in `.env` — see `.env.example` for the full annotated lis
 | `JWT_EXPIRES_IN` | e.g. `7d` |
 | `CLIENT_URL` | frontend origin; also used to build email links |
 | `PORT` | e.g. `5000` |
+
+Leave `CLIENT_URL` unset and CORS falls open to any origin; email links fall back
+to `http://localhost:3000`.
 
 **Firebase Storage** — from *Project settings → Service accounts → Generate new private key*
 
@@ -96,15 +99,23 @@ is at `/api/docs.json`). Summary:
 | Method | Path | Access | Purpose |
 |---|---|---|---|
 | GET | `/` | public | Browse approved listings; filter, sort, paginate |
-| GET | `/:id` | public | One listing; increments its view counter |
-| POST | `/` | seller, admin | Publish (multipart, up to 5 images in field `images`) |
+| GET | `/:id` | public | One listing; increments its view counter, except for the seller viewing their own |
+| POST | `/` | seller or admin, **email verified** | Publish (multipart, up to 5 images in field `images`) |
 | PATCH | `/:id` | owner, admin | Update; uploading images replaces the whole set |
 | DELETE | `/:id` | owner, admin | Delete, including the stored image files |
 | PATCH | `/:id/status` | admin | Approve or reject |
 
+**Publishing requires a verified email.** `POST /` runs `requireVerified` after the
+role check, so an account whose `isVerified` is still `false` gets `403 Please verify
+your email before publishing a listing`. Registering, logging in, browsing, saving
+favourites and uploading an avatar are all unaffected. The gate is on creation only —
+editing or deleting a listing you already own is not re-checked.
+
 **Filtering.** Only whitelisted fields are filterable — `brand`, `model`, `city`,
 `condition`, `status`, `seller`, `year`, `price`, `engineCC`, `mileage`. Anything
-else in the query string is ignored rather than passed to the database.
+else in the query string is ignored rather than passed to the database. `status` is
+whitelisted but stripped from the query for anyone who is not an admin, so it is
+effectively admin-only.
 
 ```
 GET /api/listings?city=Cairo&condition=used&price[gte]=40000&price[lte]=90000
@@ -117,7 +128,9 @@ default page size is 12.
 ### Brands — `/api/brands`
 
 `GET /` and `GET /:id` are public. `POST /`, `PATCH /:id` and `DELETE /:id` are
-admin-only and multipart, with the logo in field `logo` (required on create).
+admin-only. `POST` and `PATCH` are multipart with the logo in field `logo` —
+required on create, optional on update. `DELETE` takes no body and removes the
+stored logo along with the brand.
 
 ### Favourites — `/api/favorites`
 
@@ -127,15 +140,19 @@ require a token.
 ### Admin — `/api/stats`
 
 Admin-only aggregate: totals with average/min/max price, plus breakdowns by city
-and by brand.
+and by brand. The aggregation covers every listing regardless of status.
 
 ### Conventions
 
 Every response is enveloped:
 
 ```json
-{ "success": true, "data": { }, "results": 12 }
+{ "success": true, "data": { } }
 ```
+
+Collection endpoints — `GET /api/listings`, `GET /api/brands`, `GET /api/favorites` —
+add a `results` count next to `data`. `register`, `login` and `reset-password` return
+the JWT as a top-level `token`, a sibling of `data` rather than a field inside it.
 
 Errors are `{ "success": false, "message": "..." }` with a meaningful status —
 `400` validation, `401` unauthenticated, `403` forbidden, `404` missing,
@@ -143,6 +160,8 @@ Errors are `{ "success": false, "message": "..." }` with a meaningful status —
 `NODE_ENV=development`.
 
 Authenticate with `Authorization: Bearer <token>`.
+
+`GET /api/health` is public and answers `{ success: true, message: "Server is running!" }`.
 
 ---
 
@@ -157,9 +176,9 @@ and streams it to Firebase Storage, then saves the result on the document.
   keeping it is what makes deletion possible later
 - **URLs are permanent** Firebase download-token links, so they cache well and work
   with uniform bucket-level access
-- **Cleanup is automatic.** Files are removed when a listing is deleted and when an
-  avatar or logo is replaced. If the database write fails after a successful upload,
-  the orphaned files are deleted before the error is returned
+- **Cleanup is automatic.** Files are removed when a listing or brand is deleted and
+  when an avatar or logo is replaced. If the database write fails after a successful
+  upload, the orphaned files are deleted before the error is returned
 
 Image fields are **never** read from the request body. They are derived entirely
 from the uploaded files, so a client cannot point a listing at an arbitrary URL.
@@ -169,9 +188,12 @@ Because multipart delivers every text field as a string, the Zod schemas use
 
 ## Security
 
-- **Passwords** hashed with bcrypt, cost 12, and never selected by default
+- **Passwords** hashed with `bcryptjs`, cost 12, and never selected by default
 - **Verification and reset tokens** stored as SHA-256 hashes; the raw value exists
   only in the email. Links are single-use and expire (24 h / 60 min)
+- **Publishing is gated on a verified email** — `requireVerified` sits on
+  `POST /api/listings` and returns `403` while `isVerified` is `false`. Unverified
+  accounts can still register, log in and browse; they just cannot publish
 - **No account enumeration** — `forgot-password` and `resend-verification` return
   an identical response whether or not the address exists
 - **Rate limiting** — 300 requests per 15 min across `/api`; 10 per 15 min on login,
@@ -180,10 +202,11 @@ Because multipart delivers every text field as a string, the Zod schemas use
 - **Injection** — keys containing `$` or `.` are stripped from body, params and query
 - **Unapproved listings are private**, visible only to their seller and to admins;
   they return `404` rather than `403` so the response does not confirm they exist
-- **Ownership** is checked on every mutating listing route
+- **Ownership** is checked on the listing update and delete routes; status changes
+  are admin-only and skip the ownership check entirely
 - `helmet` for security headers, `cors` restricted to `CLIENT_URL`
 
-> Note: `express-mongo-sanitize` is deliberately **not** used. It assigns to
+> Note: `express-mongo-sanitize` is deliberately **not** a dependency. It assigns to
 > `req.query`, which is getter-only in Express 5, and throws on every request.
 > `src/middleware/sanitize.js` replaces it.
 
@@ -202,7 +225,7 @@ wiped between tests and dropped at the end.
 |---|---|
 | `listings.test.js` | Multipart uploads end to end, field coercion, file rejection, listing visibility, range filtering, cascade delete |
 | `auth.test.js` | Registration, login, avatar upload and replacement |
-| `accountFlows.test.js` | Email verification and password reset: token hashing, expiry, single use, enumeration resistance |
+| `accountFlows.test.js` | Email verification and password reset: token hashing, expiry, single use, enumeration resistance, SMTP outages |
 | `security.test.js` | Injection attempts, privilege escalation, token handling |
 | `favorites.test.js` | Saving, duplicate conflict, per-user isolation, removal |
 | `docs.test.js` | OpenAPI document integrity, view counter |
@@ -228,6 +251,7 @@ src/
 │   ├── optionalAuth.js Attaches req.user if present, never rejects
 │   ├── authorize.js    Role check
 │   ├── checkOwnership.js
+│   ├── requireVerified.js
 │   ├── upload.js       Multer config: memory storage, type and size limits
 │   ├── sanitize.js     Strips Mongo operator syntax
 │   ├── validate.js     Runs a Zod schema over req.body
@@ -245,7 +269,9 @@ src/
 
 Middleware order on upload routes matters: **multer runs before validation**,
 because `express.json()` does not parse multipart bodies — multer is what
-populates `req.body` for those requests.
+populates `req.body` for those requests. The access checks (`authorize`,
+`requireVerified`, `checkOwnership`) all sit ahead of multer, so a rejected request
+never reaches the upload.
 
 ## Not implemented
 
@@ -253,8 +279,10 @@ Honest list of what this does not do yet:
 
 - No refresh tokens or logout; JWTs are valid until they expire
 - No change-password or profile-update endpoint beyond the avatar
-- Verification is recorded but **not enforced** — unverified users can still log in
-  and publish. Gating on `isVerified` is a one-line change in `middleware/auth.js`
+- Verification is enforced on **publishing only**. Every other authenticated action —
+  favourites, avatar upload, editing a listing you already own, and the whole brand
+  admin surface — still works without a verified email
+- The `403` for an unverified seller has **no test covering it** yet
 - No image resizing or thumbnails; files are stored exactly as uploaded
 - Favourites do not verify that the listing id actually exists before saving it
 - No CI configuration

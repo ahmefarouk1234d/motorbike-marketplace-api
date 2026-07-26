@@ -2,7 +2,6 @@ import { jest } from '@jest/globals';
 import User from '../src/models/user.model.js';
 import Brand from '../src/models/brand.model.js';
 
-// A real 1x1 PNG, so multer's mimetype filter sees a genuine image.
 export const PNG = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
     'base64'
@@ -16,6 +15,7 @@ export const makeUser = async (overrides = {}) => {
         fullName: 'Test User',
         email: uniqueEmail(),
         password: 'password123',
+        isVerified: true,
         ...overrides
     });
     return { user, token: user.generateJWT() };
@@ -24,8 +24,6 @@ export const makeUser = async (overrides = {}) => {
 export const makeBrand = (overrides = {}) =>
     Brand.create({ name: `Brand${++counter}`, description: 'test brand', ...overrides });
 
-// Stand-in for src/utils/storage.js. Returns the same { url, path } shape as the
-// real module so controllers cannot tell the difference, without touching Firebase.
 export const storageMock = () => ({
     uploadFile: jest.fn(async (file, folder) => ({
         url: `https://fake.storage/${folder}/file.png`,
