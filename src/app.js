@@ -13,9 +13,6 @@ import favoriteRouter from './routes/favorite.routes.js';
 import statsRouter from './routes/stats.routes.js';
 const app = express();
 
-// Mounted ahead of helmet on purpose: swagger-ui ships inline styles and scripts
-// that helmet's default Content-Security-Policy blocks, which leaves the docs
-// page blank. Everything below this line still gets the full helmet treatment.
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi, {
     customSiteTitle: 'Motorbike Marketplace API'
 }));
@@ -28,7 +25,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Limits are skipped under test so the suite is not throttled by its own traffic.
 const skipInTest = () => process.env.NODE_ENV === 'test';
 
 const apiLimiter = rateLimit({
@@ -40,9 +36,6 @@ const apiLimiter = rateLimit({
     message: { success: false, message: 'Too many requests, please try again later' }
 });
 
-// Credential endpoints get a much tighter budget. skipSuccessfulRequests means a
-// legitimate user logging in repeatedly is never penalised - only failures count,
-// which is what makes this a brute-force control rather than a usage cap.
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 10,
@@ -60,8 +53,6 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ success: true, message: 'Server is running!' });
 });
 
-// Credential and mail-sending endpoints. The last two also protect other people's
-// inboxes, since an unthrottled reset endpoint is a spam relay.
 for (const path of ['/login', '/register', '/forgot-password', '/resend-verification']) {
     app.use(`/api/auth${path}`, authLimiter);
 }

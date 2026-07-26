@@ -1,8 +1,5 @@
 import * as z from "zod";
 
-// These routes now accept multipart/form-data, where every text field arrives as
-// a string. z.coerce.number() parses before validating - a plain z.number() would
-// reject "45000" and fail every create request.
 const createListingSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters"),
     description: z.string().min(10, "Description must be at least 10 characters"),
@@ -28,7 +25,4 @@ const updateListingSchema = z.object({
     city: z.string().min(1).optional()
 });
 
-// `images` is deliberately absent from both schemas. Zod strips unknown keys, so
-// a client that posts its own images array has it discarded - the controller
-// builds that field from the uploaded files instead.
 export { createListingSchema, updateListingSchema };

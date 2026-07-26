@@ -4,8 +4,6 @@ import asyncHandler from '../utils/asyncHandler.js';
 import APIFeatures from '../utils/APIFeatures.js';
 import { uploadFiles, deleteFiles } from '../utils/storage.js';
 
-// Fields a client may filter the listing feed on. Anything else in the query
-// string is ignored rather than passed through to Mongoose.
 const LISTING_FILTERS = ['brand', 'model', 'city', 'condition', 'status', 'seller', 'year', 'price', 'engineCC', 'mileage'];
 
 const createListing = asyncHandler(async (req, res, next) => {
@@ -19,9 +17,6 @@ const createListing = asyncHandler(async (req, res, next) => {
         });
         res.status(201).json({ success: true, data: listing });
     } catch (err) {
-        // The files are already in the bucket by this point. If the document
-        // fails to save they would be orphaned with nothing pointing at them,
-        // so clean up before letting the error reach the handler.
         await deleteFiles(images.map((image) => image.path));
         throw err;
     }
@@ -30,8 +25,6 @@ const createListing = asyncHandler(async (req, res, next) => {
 const getAllListings = asyncHandler(async (req, res, next) => {
     const isAdmin = req.user?.role === 'admin';
 
-    // Only admins may pick a status. Dropping it for everyone else stops
-    // ?status=pending from surfacing listings that have not been approved.
     const queryString = { ...req.query };
     if (!isAdmin) delete queryString.status;
 
@@ -41,8 +34,6 @@ const getAllListings = asyncHandler(async (req, res, next) => {
         .limitFields()
         .paginate();
 
-    // Applied after filter() on purpose: Mongoose merges find() conditions with
-    // the last one winning, so the scope has to go on last to be authoritative.
     if (!isAdmin) features.query = features.query.find({ status: 'approved' });
 
     const listings = await features.query
@@ -64,8 +55,6 @@ const getListing = asyncHandler(async (req, res, next) => {
         return next(new AppError('Listing not found', 404));
     }
 
-    // A listing that is not approved stays visible only to its seller and to
-    // admins. 404 rather than 403 so the response does not confirm it exists.
     if (listing.status !== 'approved') {
         const isAdmin = req.user?.role === 'admin';
         const isOwner = req.user && listing.seller?._id?.toString() === req.user._id.toString();
@@ -74,8 +63,6 @@ const getListing = asyncHandler(async (req, res, next) => {
         }
     }
 
-    // $inc rather than save() so concurrent views cannot overwrite each other's
-    // count. The owner looking at their own listing is not a view.
     const isOwnListing = req.user && listing.seller?._id?.toString() === req.user._id.toString();
     if (!isOwnListing) {
         await Listing.updateOne({ _id: listing._id }, { $inc: { viewsCount: 1 } });
@@ -86,11 +73,8 @@ const getListing = asyncHandler(async (req, res, next) => {
 });
 
 const updateListing = asyncHandler(async (req, res, next) => {
-    // checkOwnership has already loaded and authorised this document.
     const listing = req.resource;
     const uploaded = req.files?.length ? await uploadFiles(req.files, 'listings') : [];
-    // Uploading images replaces the existing set rather than appending, which
-    // keeps the result predictable and respects the five-image cap.
     const superseded = uploaded.length ? listing.images.map((image) => image.path) : [];
 
     Object.assign(listing, req.body);
@@ -108,7 +92,6 @@ const updateListing = asyncHandler(async (req, res, next) => {
         { path: 'seller', select: 'fullName email' }
     ]);
 
-    // Old files go only after the new ones are safely persisted.
     await deleteFiles(superseded);
 
     res.status(200).json({ success: true, data: listing });

@@ -5,8 +5,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_LISTING_IMAGES = 5;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-// Files are held in memory rather than written to disk because they are streamed
-// straight on to Firebase - there is no point touching the filesystem in between.
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_FILE_SIZE },

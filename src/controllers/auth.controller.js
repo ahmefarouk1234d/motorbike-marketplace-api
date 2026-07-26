@@ -7,8 +7,6 @@ import { verificationEmail, passwordResetEmail } from '../utils/emailTemplates.j
 
 const clientUrl = () => process.env.CLIENT_URL || 'http://localhost:3000';
 
-// A mail outage must not take registration or password reset down with it, so
-// delivery failures are logged and swallowed rather than surfaced to the caller.
 const deliver = async (to, message) => {
     try {
         await sendEmail({ to, ...message });
@@ -45,7 +43,7 @@ const existinguser = await User.findOne({ email });
     }
 });
 });
- 
+
 const loginUser = asyncHandler(async (req, res, next) => {
 const { email, password } = req.body;
 const user = await User.findOne({ email }).select('+password');
@@ -72,9 +70,6 @@ const updateAvatar = asyncHandler(async (req, res, next) => {
     const superseded = req.user.avatar?.path;
     const avatar = await uploadFile(req.file, `avatars/${req.user._id}`);
 
-    // findByIdAndUpdate rather than user.save(): `protect` loads the user without
-    // the select:false password field, and a targeted update sidesteps re-running
-    // the password hashing hook entirely.
     const user = await User.findByIdAndUpdate(
         req.user._id,
         { avatar },
@@ -95,8 +90,6 @@ const updateAvatar = asyncHandler(async (req, res, next) => {
 });
 
 const verifyEmail = asyncHandler(async (req, res, next) => {
-    // select:false hides these from the result, not from the query condition, so
-    // they must be selected back in to be cleared afterwards.
     const user = await User.findOne({
         verificationToken: User.hashToken(req.params.token),
         verificationExpires: { $gt: new Date() }
@@ -107,7 +100,6 @@ const verifyEmail = asyncHandler(async (req, res, next) => {
     }
 
     user.isVerified = true;
-    // Clearing both fields makes the link single-use.
     user.verificationToken = undefined;
     user.verificationExpires = undefined;
     await user.save({ validateBeforeSave: false });
@@ -125,8 +117,6 @@ const resendVerification = asyncHandler(async (req, res, next) => {
         await deliver(user.email, verificationEmail(`${clientUrl()}/verify-email/${rawToken}`));
     }
 
-    // Always the same reply. Confirming whether an address exists, or whether it
-    // is already verified, would turn this into an account enumeration oracle.
     res.status(200).json({
         success: true,
         message: 'If that address needs verifying, a new link has been sent'
@@ -159,13 +149,11 @@ const resetPassword = asyncHandler(async (req, res, next) => {
         return next(new AppError('Reset link is invalid or has expired', 400));
     }
 
-    // Assigning password marks it modified, so the pre-save hook rehashes it.
     user.password = req.body.password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
 
-    // A fresh token is returned so the user is signed in straight after resetting.
     res.status(200).json({ success: true, token: user.generateJWT() });
 });
 

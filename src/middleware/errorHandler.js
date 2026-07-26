@@ -9,8 +9,6 @@ export const errorHandler = (err, req, res, next) => {
     let statusCode = err.statusCode || 500;
     let message = err.message || 'Internal server error';
 
-    // Multer rejects oversized or unexpected files with its own error type, which
-    // would otherwise surface as a bare 500.
     if (err.name === 'MulterError') {
         statusCode = 400;
         if (err.code === 'LIMIT_FILE_SIZE') {

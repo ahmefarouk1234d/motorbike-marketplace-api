@@ -5,8 +5,6 @@ import { makeUser, storageMock } from './helpers.js';
 
 jest.unstable_mockModule('../src/utils/storage.js', () => storageMock());
 
-// Captures outgoing mail instead of sending it, so the raw token in the link can
-// be pulled back out and used the way a real recipient would.
 const sendEmail = jest.fn(async () => {});
 jest.unstable_mockModule('../src/utils/sendEmail.js', () => ({ default: sendEmail }));
 

@@ -2,7 +2,6 @@ import Listing from '../models/listing.model.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 const getStats = asyncHandler(async (req, res, next) => {
-    // total listings, average price, min/max — overall
     const overview = await Listing.aggregate([
         {
             $group: {
@@ -15,7 +14,6 @@ const getStats = asyncHandler(async (req, res, next) => {
         }
     ]);
 
-    // count + average price grouped by city
     const byCity = await Listing.aggregate([
         {
             $group: {
@@ -27,7 +25,6 @@ const getStats = asyncHandler(async (req, res, next) => {
         { $sort: { count: -1 } }
     ]);
 
-    // count grouped by brand (with brand name via lookup)
     const byBrand = await Listing.aggregate([
         {
             $group: {

@@ -1,7 +1,3 @@
-// Both templates carry the link in the plain-text body as well as the HTML, so
-// they stay usable in clients that block HTML and are less likely to be binned
-// as spam.
-
 const layout = (heading, body, actionUrl, actionLabel) => `
 <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
   <h2 style="margin:0 0 16px">${heading}</h2>

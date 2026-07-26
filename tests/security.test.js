@@ -29,7 +29,6 @@ describe('NoSQL injection', () => {
                 role: { $ne: 'buyer' }
             });
 
-        // Registration succeeds, but the injected operator must not survive.
         expect(res.status).toBe(201);
         expect(res.body.data.role).toBe('buyer');
     });

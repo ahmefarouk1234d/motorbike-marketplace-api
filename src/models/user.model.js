@@ -19,9 +19,6 @@ const userSchema = new Schema({
     role:     { type: String, enum: ['buyer', 'seller', 'admin'], default: 'buyer' },
     isVerified: { type: Boolean, default: false },
 
-    // Only the hash of each token is stored. The raw value goes out by email and
-    // is never persisted, so a database leak does not hand over live tokens.
-    // select:false keeps them out of ordinary queries by default.
     verificationToken:   { type: String, select: false },
     verificationExpires: { type: Date, select: false },
     passwordResetToken:   { type: String, select: false },
@@ -43,9 +40,6 @@ userSchema.methods.generateJWT = function () {
     return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
 };
 
-// Returns the raw token to email out; only its hash is kept on the document.
-// These values are random and high entropy already, so a plain sha256 is enough -
-// there is nothing here for an attacker to guess the way there is with a password.
 const issueToken = (doc, tokenField, expiryField, ttlMs) => {
     const raw = crypto.randomBytes(32).toString('hex');
     doc[tokenField] = crypto.createHash('sha256').update(raw).digest('hex');
@@ -61,7 +55,6 @@ userSchema.methods.createPasswordResetToken = function () {
     return issueToken(this, 'passwordResetToken', 'passwordResetExpires', PASSWORD_RESET_TTL_MS);
 };
 
-// Hashes an incoming token the same way, so lookups compare hash to hash.
 userSchema.statics.hashToken = (raw) => crypto.createHash('sha256').update(raw).digest('hex');
 
 const User = mongoose.model('User', userSchema);

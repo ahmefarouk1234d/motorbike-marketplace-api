@@ -1,9 +1,6 @@
 import mongoose from 'mongoose';
 import { beforeAll, afterEach, afterAll } from '@jest/globals';
 
-// Importing this module registers the hooks for whichever test file pulls it in,
-// which avoids needing a global setupFiles entry.
-
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET ||= 'test-secret';
 process.env.JWT_EXPIRES_IN ||= '1h';
@@ -15,7 +12,6 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-    // Wiping between tests keeps each one independent of ordering.
     const { collections } = mongoose.connection;
     for (const name of Object.keys(collections)) {
         await collections[name].deleteMany({});

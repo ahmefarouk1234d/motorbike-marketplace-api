@@ -3,8 +3,6 @@ import request from 'supertest';
 import './setup.js';
 import { PNG, makeUser, makeBrand, storageMock, listingFields } from './helpers.js';
 
-// Registered before app.js is pulled in, so the controllers resolve to this
-// instead of the real Firebase module. No test touches the network.
 const storage = storageMock();
 jest.unstable_mockModule('../src/utils/storage.js', () => storage);
 
@@ -47,7 +45,6 @@ describe('POST /api/listings (multipart)', () => {
         const res = await post(token, listingFields(brand._id), [['images', PNG, 'a.png']]);
 
         expect(res.status).toBe(201);
-        // The regression this guards: z.number() would reject "145000" outright.
         expect(res.body.data.price).toBe(145000);
         expect(res.body.data.year).toBe(2024);
         expect(res.body.data.engineCC).toBe(200);
