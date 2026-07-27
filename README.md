@@ -70,9 +70,7 @@ to `http://localhost:3000`.
 
 Port `465` uses implicit TLS; `587` uses STARTTLS.
 
-> `.env` is gitignored. Never commit it, and never paste a service-account key
-> into chat, a ticket, or a screenshot — if one leaks, rotate it in the Google
-> Cloud console rather than hoping nobody noticed.
+
 
 ---
 
