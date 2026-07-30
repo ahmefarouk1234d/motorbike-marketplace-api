@@ -109,14 +109,36 @@ prev/next, and disable *next* when `results < limit`.
 **Consequence:** after creating a listing you cannot read `result.brand.name` —
 re-fetch the listing if you need it.
 
-Populated shapes are partial:
-- brand → `{ _id, name, logo }`
-- seller → `{ _id, fullName, email }`
+Populated shapes are **partial**, because the controllers select specific
+fields (`.populate('seller', 'fullName email')`):
 
-### 3. `id` vs `_id`
+- brand → `{ _id, name, logo }` — no description, no timestamps
+- seller → `{ _id, fullName, email }` — no role, no isVerified, no avatar
 
-`GET /auth/me` and the auth responses return `id`, because the route hand-builds
-that object. Everything else is a Mongoose document and uses `_id`.
+**Consequence:** do not type a populated seller as a full user. It compiles,
+then `listing.seller.isVerified` is silently `undefined` forever.
+
+### 3. `id` vs `_id`, and three different user shapes
+
+`GET /auth/me` and the auth responses return `id`, because those objects are
+hand-built rather than returned as Mongoose documents. Everything else is a real
+document and uses `_id`.
+
+The API never returns one consistent user. There are three:
+
+| Source | Key | Fields |
+|---|---|---|
+| `GET /auth/me` | `id` | fullName, email, role, **isVerified**, avatar |
+| register / login | `id` | fullName, email, role |
+| seller on a listing | `_id` | fullName, email |
+
+**`isVerified` appears in the first row only.** Reading it off a login response
+yields `undefined`, which is falsy — so a verification check run straight after
+login will block a seller who *is* verified. Call `GET /auth/me` after
+authenticating and check it there.
+
+None of these carry `phone`, `city`, `createdAt` or `updatedAt`, even though the
+User schema stores them. No endpoint exposes them.
 
 ### 4. Filtering is exact-match only
 
@@ -202,8 +224,9 @@ Registering, logging in, browsing, favouriting, uploading an avatar and
 **editing a listing you already own** are all unaffected. A frontend guard
 should therefore cover the create route and nothing else.
 
-`isVerified` is exposed on `GET /auth/me`. The JWT payload carries only
-`{ id, role }`, so it cannot be read from the token.
+`isVerified` is exposed on `GET /auth/me` and **nowhere else** — not on the
+login or register response, and not in the JWT, whose payload carries only
+`{ id, role }`. See gotcha 3.
 
 ---
 
