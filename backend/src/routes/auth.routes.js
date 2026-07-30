@@ -28,7 +28,17 @@ router.post('/resend-verification', validate(emailOnlySchema), resendVerificatio
 router.post('/forgot-password', validate(emailOnlySchema), forgotPassword);
 router.patch('/reset-password/:token', validate(resetPasswordSchema), resetPassword);
 router.get('/me', protect, (req, res) => {
-    res.json({ success: true, data: { id: req.user._id, email: req.user.email, role: req.user.role, avatar: req.user.avatar } });
+    res.json({
+        success: true,
+        data: {
+            id: req.user._id,
+            fullName: req.user.fullName,
+            email: req.user.email,
+            role: req.user.role,
+            isVerified: req.user.isVerified,
+            avatar: req.user.avatar
+        }
+    });
 });
 router.patch('/me/avatar', protect, uploadAvatar, updateAvatar);
 
