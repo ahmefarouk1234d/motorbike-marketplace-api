@@ -19,11 +19,10 @@ export interface Listing {
     status: ListingStatus;
     viewsCount: number;
 
-    images: StoredFile[];                    // array of StoredFile
+    images: StoredFile[];
 
-    // ⚠️ QUIRK: populated (object) on GET, plain id (string) on POST/DELETE/PATCH-status
-    brand: Ref<Brand>;                       // string OR Brand
-    seller: Ref<User>;                       // string OR User
+    brand: Ref<Brand>;
+    seller: Ref<User>;
 
     createdAt?: string;
     updatedAt?: string;
