@@ -1,0 +1,55 @@
+@if (label()) {
+    <span class="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">{{ label() }}</span>
+}
+
+<button
+    type="button"
+    class="flex w-full items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-left text-sm font-semibold ring-1 ring-slate-900/5 transition-all duration-200 hover:shadow-sm active:scale-[0.98]"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="listbox"
+    (click)="toggle()"
+    (keydown.arrowDown)="$event.preventDefault(); move(1)"
+    (keydown.arrowUp)="$event.preventDefault(); move(-1)"
+    (keydown.enter)="$event.preventDefault(); chooseActive()"
+>
+    <span class="truncate" [class.text-slate-400]="!selected()">{{ display() }}</span>
+
+    <svg
+        class="size-4 shrink-0 text-slate-400 transition-transform duration-200"
+        [class.rotate-180]="open()"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+    >
+        <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+</button>
+
+@if (open()) {
+    <ul
+        class="rise absolute left-0 right-0 top-full z-30 mt-2 max-h-64 overflow-y-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-900/5"
+        role="listbox"
+    >
+        @for (option of options(); track option.value; let i = $index) {
+            <li role="option" [attr.aria-selected]="option.value === value()">
+                <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200"
+                    [class]="i === activeIndex() ? 'bg-slate-50' : ''"
+                    [class.font-semibold]="option.value === value()"
+                    (mouseenter)="activeIndex.set(i)"
+                    (click)="choose(option)"
+                >
+                    <span class="truncate">{{ option.label }}</span>
+
+                    @if (option.value === value()) {
+                        <svg class="size-4 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    }
+                </button>
+            </li>
+        }
+    </ul>
+}
