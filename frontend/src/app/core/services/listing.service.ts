@@ -58,7 +58,7 @@ export class ListingService {
         return params;
     }
 
-    private toFormData(data: Record<string, unknown>, images: File[]): FormData {
+    private toFormData(data: object, images: File[]): FormData {
         const form = new FormData();
 
         for (const [key, value] of Object.entries(data)) {
