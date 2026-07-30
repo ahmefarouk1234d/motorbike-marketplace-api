@@ -8,3 +8,10 @@ export interface Brand {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export interface CreateBrandDto {
+    name: string;
+    description?: string;
+}
+
+export type UpdateBrandDto = Partial<CreateBrandDto>;
