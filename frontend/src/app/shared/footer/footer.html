@@ -1,1 +1,53 @@
-<p>footer works!</p>
+<footer class="mt-auto bg-slate-950 text-slate-400">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div class="max-w-xs">
+                <div class="flex items-center gap-2 text-white">
+                    <span class="grid size-8 place-items-center rounded-xl bg-white/10">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                            <circle cx="5.5" cy="17" r="3.5" />
+                            <circle cx="18.5" cy="17" r="3.5" />
+                            <path d="M5.5 17h5l4-7h-4M14 6h3l1.5 11" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                    <span class="text-base font-bold tracking-tight">MotorSouq</span>
+                </div>
+                <p class="mt-3 text-sm leading-relaxed">
+                    Buy and sell motorbikes across Egypt.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Browse</p>
+                    <ul class="mt-3 flex flex-col gap-2 text-sm">
+                        <li><a routerLink="/listings" class="transition-all duration-200 hover:text-white">All bikes</a></li>
+                        <li><a routerLink="/listings" [queryParams]="{ condition: 'new' }" class="transition-all duration-200 hover:text-white">New</a></li>
+                        <li><a routerLink="/listings" [queryParams]="{ condition: 'used' }" class="transition-all duration-200 hover:text-white">Used</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Account</p>
+                    <ul class="mt-3 flex flex-col gap-2 text-sm">
+                        <li><a routerLink="/login" class="transition-all duration-200 hover:text-white">Sign in</a></li>
+                        <li><a routerLink="/register" class="transition-all duration-200 hover:text-white">Create account</a></li>
+                        <li><a routerLink="/favorites" class="transition-all duration-200 hover:text-white">Favourites</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Sell</p>
+                    <ul class="mt-3 flex flex-col gap-2 text-sm">
+                        <li><a routerLink="/listings/create" class="transition-all duration-200 hover:text-white">List a bike</a></li>
+                        <li><a routerLink="/account/listings" class="transition-all duration-200 hover:text-white">My listings</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-10 border-t border-white/10 pt-6">
+            <p class="text-xs text-slate-500">© {{ year }} MotorSouq · NTI Final Project</p>
+        </div>
+    </div>
+</footer>

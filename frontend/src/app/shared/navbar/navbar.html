@@ -1,1 +1,155 @@
-<p>navbar works!</p>
+<header class="sticky top-0 z-40 border-b border-slate-900/5 bg-white/80 backdrop-blur-md">
+    <nav class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <a
+            routerLink="/listings"
+            class="flex items-center gap-2 rounded-lg transition-all duration-200 active:scale-[0.98]"
+            (click)="closeAll()"
+        >
+            <span class="grid size-8 place-items-center rounded-xl bg-slate-900 text-white">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <circle cx="5.5" cy="17" r="3.5" />
+                    <circle cx="18.5" cy="17" r="3.5" />
+                    <path d="M5.5 17h5l4-7h-4M14 6h3l1.5 11" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+            <span class="text-base font-bold tracking-tight">MotorSouq</span>
+        </a>
+
+        <div class="hidden items-center gap-1 md:flex">
+            <a
+                routerLink="/listings"
+                routerLinkActive="bg-slate-100 text-slate-900"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+            >Browse</a>
+
+            @if (isLoggedIn()) {
+                <a
+                    routerLink="/favorites"
+                    routerLinkActive="bg-slate-100 text-slate-900"
+                    class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+                >Favourites</a>
+            }
+
+            @if (isAdmin()) {
+                <a
+                    routerLink="/admin"
+                    routerLinkActive="bg-slate-100 text-slate-900"
+                    class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+                >Admin</a>
+            }
+        </div>
+
+        <span class="flex-1"></span>
+
+        @if (canSell()) {
+            <a
+                routerLink="/listings/create"
+                class="hidden rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-900/5 transition-all duration-200 hover:bg-amber-400 hover:shadow-lg active:scale-[0.98] sm:block"
+                (click)="closeAll()"
+            >Sell a bike</a>
+        }
+
+        @if (isLoggedIn()) {
+            <div class="relative hidden md:block">
+                <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-xl py-1 pl-1 pr-2 transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]"
+                    [attr.aria-expanded]="accountOpen()"
+                    aria-haspopup="menu"
+                    (click)="toggleAccount()"
+                >
+                    <span class="grid size-8 place-items-center rounded-full bg-slate-900 text-[11px] font-bold uppercase tracking-wider text-white">
+                        {{ initials(user()?.fullName) }}
+                    </span>
+                    <svg class="size-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+
+                @if (accountOpen()) {
+                    <div
+                        class="rise absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-900/5"
+                        role="menu"
+                    >
+                        <div class="border-b border-slate-900/5 px-4 py-3">
+                            <p class="truncate text-sm font-semibold">{{ user()?.fullName }}</p>
+                            <p class="truncate text-xs text-slate-500">{{ user()?.email }}</p>
+                            @if (!user()?.isVerified) {
+                                <p class="mt-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-600">
+                                    Email not verified
+                                </p>
+                            }
+                        </div>
+
+                        <a routerLink="/account" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">My profile</a>
+                        <a routerLink="/account/listings" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">My listings</a>
+                        <a routerLink="/favorites" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">Favourites</a>
+
+                        <button
+                            type="button"
+                            role="menuitem"
+                            class="w-full border-t border-slate-900/5 px-4 py-2.5 text-left text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+                            (click)="logout()"
+                        >Sign out</button>
+                    </div>
+                }
+            </div>
+        } @else {
+            <div class="hidden items-center gap-2 md:flex">
+                <a
+                    routerLink="/login"
+                    class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+                >Sign in</a>
+                <a
+                    routerLink="/register"
+                    class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+                >Create account</a>
+            </div>
+        }
+
+        <button
+            type="button"
+            class="rounded-lg p-2 text-slate-600 transition-all duration-200 hover:bg-slate-50 active:scale-[0.98] md:hidden"
+            [attr.aria-expanded]="menuOpen()"
+            aria-label="Menu"
+            (click)="toggleMenu()"
+        >
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                @if (menuOpen()) {
+                    <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+                } @else {
+                    <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
+                }
+            </svg>
+        </button>
+    </nav>
+
+    @if (menuOpen()) {
+        <div class="rise border-t border-slate-900/5 bg-white px-4 py-3 md:hidden">
+            <div class="flex flex-col gap-1">
+                <a routerLink="/listings" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">Browse</a>
+
+                @if (isLoggedIn()) {
+                    <a routerLink="/favorites" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">Favourites</a>
+                    <a routerLink="/account/listings" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">My listings</a>
+                }
+
+                @if (isAdmin()) {
+                    <a routerLink="/admin" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">Admin</a>
+                }
+
+                @if (canSell()) {
+                    <a routerLink="/listings/create" class="mt-1 rounded-xl bg-amber-500 px-3 py-2.5 text-center text-sm font-semibold text-slate-900 transition-all duration-200 active:scale-[0.98]" (click)="closeAll()">Sell a bike</a>
+                }
+
+                @if (isLoggedIn()) {
+                    <button type="button" class="mt-1 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="logout()">Sign out</button>
+                } @else {
+                    <a routerLink="/login" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">Sign in</a>
+                    <a routerLink="/register" class="mt-1 rounded-xl bg-slate-900 px-3 py-2.5 text-center text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98]" (click)="closeAll()">Create account</a>
+                }
+            </div>
+        </div>
+    }
+</header>

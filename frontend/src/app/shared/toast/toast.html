@@ -1,0 +1,33 @@
+@if (notices().length) {
+    <div
+        class="pointer-events-none fixed bottom-4 right-4 z-50 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2"
+        role="status"
+        aria-live="polite"
+    >
+        @for (notice of notices(); track notice.id) {
+            <div
+                class="slide-in pointer-events-auto flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-lg ring-1 ring-slate-900/5"
+            >
+                <span
+                    class="mt-1.5 size-2 shrink-0 rounded-full"
+                    [class.bg-amber-500]="notice.kind === 'error'"
+                    [class.bg-emerald-400]="notice.kind === 'success'"
+                    [class.bg-slate-400]="notice.kind === 'info'"
+                ></span>
+
+                <p class="flex-1 text-sm leading-snug">{{ notice.text }}</p>
+
+                <button
+                    type="button"
+                    class="-mr-1 shrink-0 rounded-lg p-1 text-slate-400 transition-all duration-200 hover:text-white active:scale-[0.98]"
+                    [attr.aria-label]="'Dismiss: ' + notice.text"
+                    (click)="dismiss(notice.id)"
+                >
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+        }
+    </div>
+}
