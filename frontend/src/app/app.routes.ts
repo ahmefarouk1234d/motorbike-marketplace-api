@@ -19,6 +19,11 @@ export const routes: Routes = [
         path: 'listings/:id',
         loadComponent: () => import('./features/listings/detail/detail').then(m => m.Detail)
     },
+    {
+        path: 'listings/:id/edit',
+        loadComponent: () => import('./features/listings/create/create').then(m => m.Create),
+        canActivate: [authGuard]
+    },
 
     {
         path: 'login',

@@ -33,7 +33,7 @@
             It may have been sold, removed, or it is still waiting for approval.
         </p>
         <a
-            href="/listings"
+            routerLink="/listings"
             class="mt-8 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
         >Browse bikes</a>
     </section>
@@ -93,7 +93,7 @@
                 <span class="flex-1"></span>
 
                 <a
-                    [href]="'/listings/' + bike._id + '/edit'"
+                    [routerLink]="['/listings', bike._id, 'edit']"
                     class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-900/5 transition-all duration-200 hover:text-slate-900 active:scale-[0.98]"
                 >Edit</a>
 

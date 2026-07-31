@@ -1,13 +1,19 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { isPopulated } from '../../../core/models/api';
+import { Brand } from '../../../core/models/brand';
 import {
     ACCEPTED_IMAGE_TYPES,
     Condition,
     CreateListingDto,
+    Listing,
     MAX_IMAGE_BYTES,
-    MAX_LISTING_IMAGES
+    MAX_LISTING_IMAGES,
+    UpdateListingDto
 } from '../../../core/models/listing';
+import { User } from '../../../core/models/user';
+import { AuthService } from '../../../core/services/auth.service';
 import { BrandService } from '../../../core/services/brand.service';
 import { ListingService } from '../../../core/services/listing.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -28,15 +34,23 @@ export class Create {
     private readonly listings = inject(ListingService);
     private readonly brandService = inject(BrandService);
     private readonly notify = inject(NotificationService);
+    private readonly auth = inject(AuthService);
     private readonly router = inject(Router);
+
+    readonly id = input('');
 
     readonly maxImages = MAX_LISTING_IMAGES;
     readonly maxBytes = MAX_IMAGE_BYTES;
     readonly currentYear = new Date().getFullYear();
 
+    readonly isEdit = computed(() => this.id().length > 0);
+    readonly loadingListing = signal(false);
+    readonly existingImages = signal<number>(0);
+
     readonly pending = signal(false);
     readonly failed = signal<string | null>(null);
     readonly created = signal<string | null>(null);
+    readonly saved = signal(false);
     readonly previews = signal<Preview[]>([]);
     readonly dragging = signal(false);
 
@@ -70,6 +84,56 @@ export class Create {
             next: brands => this.brandOptions.set(brands.map(brand => ({ value: brand._id, label: brand.name }))),
             error: () => this.brandOptions.set([])
         });
+
+        effect(() => {
+            const id = this.id();
+            if (id) this.loadExisting(id);
+        });
+    }
+
+    private loadExisting(id: string): void {
+        this.loadingListing.set(true);
+
+        this.listings.getOne(id).subscribe({
+            next: listing => {
+                if (!this.canEdit(listing)) {
+                    this.notify.error('You can only edit your own listings.');
+                    this.router.navigate(['/listings', id]);
+                    return;
+                }
+
+                this.form.patchValue({
+                    title: listing.title,
+                    brand: isPopulated<Brand>(listing.brand) ? listing.brand._id : listing.brand,
+                    model: listing.model,
+                    year: listing.year,
+                    engineCC: listing.engineCC,
+                    condition: listing.condition,
+                    price: listing.price,
+                    mileage: listing.mileage,
+                    city: listing.city,
+                    description: listing.description
+                });
+
+                // The API ignores a brand sent in a PATCH body, so the control is
+                // locked rather than left looking editable.
+                this.form.controls.brand.disable();
+
+                this.existingImages.set(listing.images?.length ?? 0);
+                this.loadingListing.set(false);
+            },
+            error: () => {
+                this.loadingListing.set(false);
+                this.failed.set('We could not load this listing.');
+            }
+        });
+    }
+
+    private canEdit(listing: Listing): boolean {
+        if (this.auth.isAdmin()) return true;
+
+        const sellerId = isPopulated<User>(listing.seller) ? listing.seller._id : listing.seller;
+        return sellerId === this.auth.user()?.id;
     }
 
     onDragOver(event: DragEvent): void {
@@ -142,6 +206,38 @@ export class Create {
         this.pending.set(true);
 
         const raw = this.form.getRawValue();
+        const files = this.previews().map(preview => preview.file);
+
+        if (this.isEdit()) {
+            // brand is omitted deliberately: the API ignores it on update.
+            const changes: UpdateListingDto = {
+                title: raw.title,
+                description: raw.description,
+                price: Number(raw.price),
+                model: raw.model,
+                year: Number(raw.year),
+                mileage: Number(raw.mileage),
+                engineCC: Number(raw.engineCC),
+                condition: raw.condition,
+                city: raw.city
+            };
+
+            this.listings.update(this.id(), changes, files).subscribe({
+                next: listing => {
+                    this.previews().forEach(preview => URL.revokeObjectURL(preview.url));
+                    this.pending.set(false);
+                    this.saved.set(true);
+                    this.created.set(listing._id);
+                },
+                error: err => {
+                    this.pending.set(false);
+                    this.failed.set(err.error?.message ?? 'We could not save your changes. Please try again.');
+                }
+            });
+
+            return;
+        }
+
         const dto: CreateListingDto = {
             title: raw.title,
             description: raw.description,
@@ -155,7 +251,7 @@ export class Create {
             city: raw.city
         };
 
-        this.listings.create(dto, this.previews().map(preview => preview.file)).subscribe({
+        this.listings.create(dto, files).subscribe({
             next: listing => {
                 this.previews().forEach(preview => URL.revokeObjectURL(preview.url));
                 this.pending.set(false);

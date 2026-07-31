@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { isPopulated } from '../../../core/models/api';
 import { Brand } from '../../../core/models/brand';
@@ -12,7 +12,7 @@ import { NotificationService } from '../../../core/services/notification.service
 
 @Component({
     selector: 'app-detail',
-    imports: [],
+    imports: [RouterLink],
     templateUrl: './detail.html'
 })
 export class Detail {
