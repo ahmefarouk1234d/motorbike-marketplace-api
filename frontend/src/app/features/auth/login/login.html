@@ -1,1 +1,58 @@
-<p>login works!</p>
+<section class="mx-auto flex w-full max-w-md flex-col px-4 py-16 sm:px-0">
+    <h1 class="text-4xl/tight font-bold tracking-tight">Sign in</h1>
+    <p class="mt-2 text-sm text-slate-500">
+        New here?
+        <a routerLink="/register" class="font-semibold text-slate-900 underline decoration-amber-500 decoration-2 underline-offset-4">Create an account</a>
+    </p>
+
+    <form class="mt-8 flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+        @if (failed()) {
+            <div class="rise rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-600/10">
+                {{ failed() }}
+            </div>
+        }
+
+        <label class="flex flex-col gap-1.5">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Email</span>
+            <input
+                type="email"
+                autocomplete="email"
+                formControlName="email"
+                class="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-slate-900/5 outline-none transition-all duration-200 focus:ring-2 focus:ring-slate-900"
+                [class.ring-red-500]="form.controls.email.touched && form.controls.email.invalid"
+            />
+            @if (form.controls.email.touched && form.controls.email.invalid) {
+                <span class="rise text-xs text-red-600">
+                    {{ form.controls.email.hasError('required') ? 'Enter your email address' : 'That email address does not look right' }}
+                </span>
+            }
+        </label>
+
+        <label class="flex flex-col gap-1.5">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Password</span>
+            <input
+                type="password"
+                autocomplete="current-password"
+                formControlName="password"
+                class="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-slate-900/5 outline-none transition-all duration-200 focus:ring-2 focus:ring-slate-900"
+                [class.ring-red-500]="form.controls.password.touched && form.controls.password.invalid"
+            />
+            @if (form.controls.password.touched && form.controls.password.invalid) {
+                <span class="rise text-xs text-red-600">Enter your password</span>
+            }
+        </label>
+
+        <button
+            type="submit"
+            class="mt-2 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="pending()"
+        >
+            @if (pending()) {
+                <span class="spinner size-4 rounded-full border-2 border-white/30 border-t-white"></span>
+                Signing in
+            } @else {
+                Sign in
+            }
+        </button>
+    </form>
+</section>
