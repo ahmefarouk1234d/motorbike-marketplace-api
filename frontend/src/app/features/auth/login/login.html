@@ -40,6 +40,10 @@
             @if (form.controls.password.touched && form.controls.password.invalid) {
                 <span class="rise text-xs text-red-600">Enter your password</span>
             }
+
+            <a routerLink="/forgot-password" class="self-start text-xs font-semibold text-slate-500 transition-all duration-200 hover:text-slate-900">
+                Forgot your password?
+            </a>
         </label>
 
         <button
