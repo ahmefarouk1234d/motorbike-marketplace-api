@@ -1,1 +1,22 @@
-<p>coming-soon works!</p>
+<section class="mx-auto flex max-w-2xl flex-col items-center px-4 py-24 text-center sm:px-6">
+    <span class="hatch grid size-16 place-items-center rounded-2xl bg-slate-50 text-slate-400 ring-1 ring-slate-900/5">
+        <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="5.5" cy="17" r="3.5" />
+            <circle cx="18.5" cy="17" r="3.5" />
+            <path d="M5.5 17h5l4-7h-4M14 6h3l1.5 11" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+    </span>
+
+    <p class="mt-6 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Not built yet</p>
+
+    <h1 class="mt-2 text-4xl/tight font-bold tracking-tight text-balance">{{ title() }}</h1>
+
+    <p class="mt-3 max-w-md text-sm text-slate-500">
+        This part of MotorSouq is still being built. Everything else works — browsing, saving favourites and listing a bike.
+    </p>
+
+    <a
+        routerLink="/listings"
+        class="mt-8 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+    >Browse bikes</a>
+</section>
