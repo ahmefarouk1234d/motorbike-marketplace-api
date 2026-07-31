@@ -1,1 +1,225 @@
-<p>browse works!</p>
+<section class="relative bg-slate-950">
+    <div class="hatch absolute inset-0 opacity-40"></div>
+
+    <div class="relative mx-auto max-w-7xl px-4 pb-28 pt-16 sm:px-6 sm:pb-24 lg:px-8">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-amber-500">Egypt's bike marketplace</p>
+        <h1 class="mt-3 max-w-2xl text-4xl/tight font-bold tracking-tight text-balance text-white">
+            Find your next ride
+        </h1>
+        <p class="mt-3 max-w-md text-sm text-slate-400">
+            Browse motorbikes from sellers across Egypt. Filter by city, brand and budget.
+        </p>
+    </div>
+
+    <div class="absolute inset-x-0 bottom-0 z-20 translate-y-1/2 px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto grid max-w-4xl gap-3 rounded-2xl bg-white p-3 shadow-lg ring-1 ring-slate-900/5 sm:grid-cols-[1fr_1fr_auto]">
+            <app-select
+                class="px-1"
+                label="City"
+                placeholder="Anywhere"
+                [options]="cityOptions"
+                [value]="city()"
+                (valueChange)="city.set($event)"
+            />
+
+            <app-select
+                class="px-1"
+                label="Brand"
+                placeholder="Any brand"
+                [options]="brandOptions()"
+                [value]="brand()"
+                (valueChange)="brand.set($event)"
+            />
+
+            <button
+                type="button"
+                class="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+                (click)="applyFilters()"
+            >Search bikes</button>
+        </div>
+    </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-4 pb-20 pt-24 sm:px-6 lg:px-8">
+    <div class="flex flex-wrap items-center gap-2">
+        <div class="flex gap-1 rounded-xl bg-slate-50 p-1 ring-1 ring-slate-900/5">
+            @for (option of [{ value: '', label: 'All' }, { value: 'new', label: 'New' }, { value: 'used', label: 'Used' }]; track option.value) {
+                <button
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
+                    [class]="condition() === option.value ? 'bg-amber-500 text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    (click)="setCondition($any(option.value))"
+                >{{ option.label }}</button>
+            }
+        </div>
+
+        <app-select
+            class="w-48"
+            [options]="sortOptions"
+            [value]="sort()"
+            (valueChange)="sort.set($event); applyFilters()"
+        />
+
+        <button
+            type="button"
+            class="rounded-xl px-3 py-2 text-sm font-semibold ring-1 transition-all duration-200 active:scale-[0.98]"
+            [class]="filtersOpen() ? 'bg-amber-500 text-slate-900 ring-slate-900/5' : 'bg-white text-slate-600 ring-slate-900/5 hover:text-slate-900'"
+            (click)="filtersOpen.set(!filtersOpen())"
+        >Price range</button>
+
+        <span class="flex-1"></span>
+
+        @if (!loading() && !error()) {
+            <p class="text-xs text-slate-500">
+                Showing <span class="font-semibold tabular-nums text-slate-900">{{ items().length }}</span>
+                {{ items().length === 1 ? 'bike' : 'bikes' }}
+            </p>
+        }
+    </div>
+
+    @if (filtersOpen()) {
+        <div class="rise mt-3 flex flex-wrap items-end gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-900/5">
+            <label class="flex flex-col gap-1">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Min price</span>
+                <input
+                    type="number"
+                    inputmode="numeric"
+                    placeholder="0"
+                    class="w-36 rounded-xl bg-white px-3 py-2 text-sm tabular-nums ring-1 ring-slate-900/5 outline-none transition-all duration-200 focus:ring-2 focus:ring-slate-900"
+                    [ngModel]="minPrice()"
+                    (ngModelChange)="minPrice.set($event === null || $event === '' ? null : +$event)"
+                />
+            </label>
+
+            <label class="flex flex-col gap-1">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Max price</span>
+                <input
+                    type="number"
+                    inputmode="numeric"
+                    placeholder="Any"
+                    class="w-36 rounded-xl bg-white px-3 py-2 text-sm tabular-nums ring-1 ring-slate-900/5 outline-none transition-all duration-200 focus:ring-2 focus:ring-slate-900"
+                    [ngModel]="maxPrice()"
+                    (ngModelChange)="maxPrice.set($event === null || $event === '' ? null : +$event)"
+                />
+            </label>
+
+            <button
+                type="button"
+                class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+                (click)="applyFilters()"
+            >Apply</button>
+        </div>
+    }
+
+    @if (hasFilters()) {
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+            @for (chip of chips(); track chip.key) {
+                <button
+                    type="button"
+                    class="group flex items-center gap-1.5 rounded-full bg-slate-900 py-1 pl-3 pr-2 text-xs font-semibold text-white transition-all duration-200 active:scale-[0.98]"
+                    [attr.aria-label]="'Remove filter: ' + chip.label"
+                    (click)="removeChip(chip.key)"
+                >
+                    {{ chip.label }}
+                    <svg class="size-3.5 text-slate-400 transition-all duration-200 group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+                    </svg>
+                </button>
+            }
+
+            <button
+                type="button"
+                class="rounded-full px-3 py-1 text-xs font-semibold text-slate-500 transition-all duration-200 hover:text-slate-900 active:scale-[0.98]"
+                (click)="clearFilters()"
+            >Clear all</button>
+        </div>
+    }
+
+    @if (loading()) {
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (skeleton of skeletons; track $index) {
+                <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-900/5">
+                    <div class="aspect-[4/3] animate-pulse bg-slate-100"></div>
+                    <div class="flex flex-col gap-3 p-4">
+                        <div class="h-4 w-3/4 animate-pulse rounded bg-slate-100"></div>
+                        <div class="h-6 w-1/2 animate-pulse rounded bg-slate-100"></div>
+                        <div class="flex gap-1.5">
+                            <div class="h-6 w-14 animate-pulse rounded-md bg-slate-100"></div>
+                            <div class="h-6 w-20 animate-pulse rounded-md bg-slate-100"></div>
+                            <div class="h-6 w-14 animate-pulse rounded-md bg-slate-100"></div>
+                        </div>
+                        <div class="h-4 w-1/3 animate-pulse rounded bg-slate-100"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    } @else if (error()) {
+        <div class="mt-6 flex flex-col items-center rounded-2xl bg-slate-50 px-6 py-16 text-center ring-1 ring-slate-900/5">
+            <span class="grid size-12 place-items-center rounded-2xl bg-white text-amber-600 ring-1 ring-slate-900/5">
+                <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M12 8v5" stroke-linecap="round" />
+                    <circle cx="12" cy="16.5" r="0.8" fill="currentColor" stroke="none" />
+                    <path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0z" stroke-linejoin="round" />
+                </svg>
+            </span>
+            <h2 class="mt-4 text-lg font-bold tracking-tight">Something went wrong</h2>
+            <p class="mt-1 max-w-sm text-sm text-slate-500">{{ error() }}</p>
+            <button
+                type="button"
+                class="mt-6 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+                (click)="load()"
+            >Try again</button>
+        </div>
+    } @else if (!items().length) {
+        <div class="mt-6 flex flex-col items-center rounded-2xl bg-slate-50 px-6 py-16 text-center ring-1 ring-slate-900/5">
+            <span class="hatch grid size-12 place-items-center rounded-2xl bg-white text-slate-400 ring-1 ring-slate-900/5">
+                <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="5.5" cy="17" r="3.5" />
+                    <circle cx="18.5" cy="17" r="3.5" />
+                    <path d="M5.5 17h5l4-7h-4M14 6h3l1.5 11" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
+            <h2 class="mt-4 text-lg font-bold tracking-tight">No bikes match these filters</h2>
+            <p class="mt-1 max-w-sm text-sm text-slate-500">Try widening your budget, or clear the filters to see everything.</p>
+            @if (hasFilters()) {
+                <button
+                    type="button"
+                    class="mt-6 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+                    (click)="clearFilters()"
+                >Clear filters</button>
+            }
+        </div>
+    } @else {
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (listing of items(); track listing._id; let i = $index) {
+                <div class="rise" [style.animation-delay]="i * 40 + 'ms'">
+                    <app-listing-card
+                        [listing]="listing"
+                        [favorite]="isSaved(listing._id)"
+                        (favoriteToggled)="toggleFavorite($event)"
+                    />
+                </div>
+            }
+        </div>
+
+        @if (hasPrev() || hasNext()) {
+            <div class="mt-10 flex items-center justify-center gap-3">
+                <button
+                    type="button"
+                    class="rounded-xl bg-white px-4 py-2 text-sm font-semibold ring-1 ring-slate-900/5 transition-all duration-200 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:shadow-none"
+                    [disabled]="!hasPrev()"
+                    (click)="changePage(-1)"
+                >Previous</button>
+
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Page {{ page() }}</span>
+
+                <button
+                    type="button"
+                    class="rounded-xl bg-white px-4 py-2 text-sm font-semibold ring-1 ring-slate-900/5 transition-all duration-200 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:shadow-none"
+                    [disabled]="!hasNext()"
+                    (click)="changePage(1)"
+                >Next</button>
+            </div>
+        }
+    }
+</section>
