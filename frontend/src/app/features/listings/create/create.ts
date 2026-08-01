@@ -37,13 +37,17 @@ export class Create {
     private readonly auth = inject(AuthService);
     private readonly router = inject(Router);
 
-    readonly id = input('');
+    // withComponentInputBinding sets this from the route. On /listings/create
+    // there is no :id segment, so it arrives as undefined rather than falling
+    // back to the declared default — hence the ?? below.
+    readonly id = input<string | undefined>('');
+    readonly listingId = computed(() => this.id() ?? '');
 
     readonly maxImages = MAX_LISTING_IMAGES;
     readonly maxBytes = MAX_IMAGE_BYTES;
     readonly currentYear = new Date().getFullYear();
 
-    readonly isEdit = computed(() => this.id().length > 0);
+    readonly isEdit = computed(() => this.listingId().length > 0);
     readonly loadingListing = signal(false);
     readonly existingImages = signal<number>(0);
 
@@ -86,7 +90,7 @@ export class Create {
         });
 
         effect(() => {
-            const id = this.id();
+            const id = this.listingId();
             if (id) this.loadExisting(id);
         });
     }
@@ -222,7 +226,7 @@ export class Create {
                 city: raw.city
             };
 
-            this.listings.update(this.id(), changes, files).subscribe({
+            this.listings.update(this.listingId(), changes, files).subscribe({
                 next: listing => {
                     this.previews().forEach(preview => URL.revokeObjectURL(preview.url));
                     this.pending.set(false);
