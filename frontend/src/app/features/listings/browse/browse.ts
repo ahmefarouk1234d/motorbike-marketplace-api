@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Brand } from '../../../core/models/brand';
 import { Condition, Listing, ListingQuery } from '../../../core/models/listing';
@@ -28,6 +29,8 @@ export class Browse {
     private readonly brandService = inject(BrandService);
     private readonly favorites = inject(FavoriteService);
     private readonly auth = inject(AuthService);
+    private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
     private readonly notify = inject(NotificationService);
 
     readonly items = signal<Listing[]>([]);
@@ -104,7 +107,48 @@ export class Browse {
             error: () => this.brands.set([])
         });
 
-        this.load();
+        // The URL is the single source of truth for the filters, so a shared or
+        // bookmarked link reproduces the same results and the back button works.
+        this.route.queryParamMap.subscribe(params => {
+            this.readParams(params);
+            this.load();
+        });
+    }
+
+    private readParams(params: ParamMap): void {
+        const condition = params.get('condition');
+
+        this.city.set(params.get('city') ?? '');
+        this.brand.set(params.get('brand') ?? '');
+        this.condition.set(condition === 'new' || condition === 'used' ? condition : '');
+        this.sort.set(params.get('sort') ?? '-createdAt');
+        this.page.set(Math.max(1, Number(params.get('page')) || 1));
+
+        const min = params.get('minPrice');
+        const max = params.get('maxPrice');
+        this.minPrice.set(min !== null && min !== '' ? Number(min) : null);
+        this.maxPrice.set(max !== null && max !== '' ? Number(max) : null);
+    }
+
+    private toQueryParams(page = 1): Record<string, string | number> {
+        const params: Record<string, string | number> = {};
+
+        if (this.city()) params['city'] = this.city();
+        if (this.brand()) params['brand'] = this.brand();
+        if (this.condition()) params['condition'] = this.condition();
+        if (this.sort() !== '-createdAt') params['sort'] = this.sort();
+        if (this.minPrice() !== null) params['minPrice'] = this.minPrice()!;
+        if (this.maxPrice() !== null) params['maxPrice'] = this.maxPrice()!;
+        if (page > 1) params['page'] = page;
+
+        return params;
+    }
+
+    private navigate(page = 1): void {
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.toQueryParams(page)
+        });
     }
 
     load(): void {
@@ -131,9 +175,8 @@ export class Browse {
     }
 
     applyFilters(): void {
-        this.page.set(1);
         this.filtersOpen.set(false);
-        this.load();
+        this.navigate();
     }
 
     clearFilters(): void {
@@ -158,8 +201,7 @@ export class Browse {
     }
 
     changePage(delta: number): void {
-        this.page.update(current => Math.max(1, current + delta));
-        this.load();
+        this.navigate(Math.max(1, this.page() + delta));
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
