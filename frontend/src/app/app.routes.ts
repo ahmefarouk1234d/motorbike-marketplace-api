@@ -59,7 +59,7 @@ export const routes: Routes = [
     {
         path: 'account/listings',
         loadComponent: () => import('./features/account/my-listings/my-listings').then(m => m.MyListings),
-        canActivate: [authGuard]
+        canActivate: [authGuard, roleGuard('seller', 'admin')]
     },
     {
         path: 'admin',

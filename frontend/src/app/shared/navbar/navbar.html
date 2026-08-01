@@ -83,7 +83,11 @@
                         </div>
 
                         <a routerLink="/account" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">My profile</a>
-                        <a routerLink="/account/listings" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">My listings</a>
+
+                        @if (canSell()) {
+                            <a routerLink="/account/listings" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">My listings</a>
+                        }
+
                         <a routerLink="/favorites" role="menuitem" class="block px-4 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900" (click)="closeAll()">Favourites</a>
 
                         <button
@@ -132,6 +136,9 @@
 
                 @if (isLoggedIn()) {
                     <a routerLink="/favorites" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">Favourites</a>
+                }
+
+                @if (canSell()) {
                     <a routerLink="/account/listings" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-50" (click)="closeAll()">My listings</a>
                 }
 

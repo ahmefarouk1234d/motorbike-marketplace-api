@@ -49,7 +49,7 @@
                 </div>
             </dl>
 
-            @if (!isVerified()) {
+            @if (canSell() && !isVerified()) {
                 <div class="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-600/10">
                     <p class="text-sm font-semibold text-amber-800">Verify your email to publish listings</p>
                     <p class="mt-1 text-sm text-amber-700">
@@ -75,10 +75,12 @@
             }
 
             <div class="flex flex-wrap gap-3 border-t border-slate-900/5 pt-6">
-                <a
-                    routerLink="/account/listings"
-                    class="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-900/5 transition-all duration-200 hover:text-slate-900 active:scale-[0.98]"
-                >My listings</a>
+                @if (canSell()) {
+                    <a
+                        routerLink="/account/listings"
+                        class="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-900/5 transition-all duration-200 hover:text-slate-900 active:scale-[0.98]"
+                    >My listings</a>
+                }
 
                 <a
                     routerLink="/favorites"

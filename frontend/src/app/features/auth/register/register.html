@@ -10,7 +10,11 @@
         <h1 class="mt-6 text-4xl/tight font-bold tracking-tight text-balance">Check your email</h1>
         <p class="mt-3 text-sm text-slate-500">
             We sent a verification link to <span class="font-semibold text-slate-900">{{ email }}</span>.
-            You need to verify before you can publish a listing.
+            @if (registeredAsSeller()) {
+                You need to verify before you can publish a listing.
+            } @else {
+                Browsing and favourites work straight away.
+            }
         </p>
 
         <a

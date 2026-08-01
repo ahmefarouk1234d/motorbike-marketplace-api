@@ -16,6 +16,7 @@ export class Register {
     readonly pending = signal(false);
     readonly failed = signal<string | null>(null);
     readonly registeredEmail = signal<string | null>(null);
+    readonly registeredAsSeller = signal(false);
     readonly resending = signal(false);
     readonly resent = signal(false);
 
@@ -46,8 +47,9 @@ export class Register {
         const email = this.form.controls.email.value;
 
         this.auth.register(this.form.getRawValue()).subscribe({
-            next: () => {
+            next: user => {
                 this.pending.set(false);
+                this.registeredAsSeller.set(user.role === 'seller');
                 this.registeredEmail.set(email);
             },
             error: err => {
