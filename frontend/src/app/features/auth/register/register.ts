@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { SignupRole } from '../../../core/models/user';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -22,9 +23,14 @@ export class Register {
         fullName: ['', [Validators.required]],
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(8)]],
+        role: ['buyer' as SignupRole, [Validators.required]],
         phone: [''],
         city: ['']
     });
+
+    setRole(role: SignupRole): void {
+        this.form.controls.role.setValue(role);
+    }
 
     submit(): void {
         if (this.pending()) return;

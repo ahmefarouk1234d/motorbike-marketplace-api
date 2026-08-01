@@ -17,15 +17,19 @@ const deliver = async (to, message) => {
     }
 };
 
+const SELF_ASSIGNABLE_ROLES = ['buyer', 'seller'];
+
 const registerUser = asyncHandler(async (req, res, next) => {
     const { fullName, email, password, phone, city } = req.body;
+
+    const role = SELF_ASSIGNABLE_ROLES.includes(req.body.role) ? req.body.role : 'buyer';
 
 const existinguser = await User.findOne({ email });
     if (existinguser) {
         return next(new AppError('Email already in use', 409));
     }
 
-    const user = await User.create({ fullName, email, password , phone, city });
+    const user = await User.create({ fullName, email, password , phone, city, role });
 
     const rawToken = user.createVerificationToken();
     await user.save({ validateBeforeSave: false });
